@@ -27,6 +27,7 @@ class OffCanvas extends Plugin {
   _setup(element, options) {
     this.$element = element;
     this.options = $.extend({}, OffCanvas.defaults, this.$element.data(), options);
+    this.contentClasses = [];
     this.$lastTrigger = $();
     this.$triggers = $();
     this.position = 'left';
@@ -34,6 +35,15 @@ class OffCanvas extends Plugin {
     this.nested = !!(this.options.nested);
     this.$relativeParent;
     this.relativeScope = false;
+
+    // Defines the CSS transition/position classes of the off-canvas content container.
+    $(['push', 'overlap']).each((index, val) => {
+      this.contentClasses.push('has-transition-'+val);
+    });
+    $(['left', 'right', 'top', 'bottom']).each((index, val) => {
+      this.contentClasses.push('has-position-'+val);
+      this.contentClasses.push('has-reveal-'+val);
+    });
 
     //Triggers init is idempotent, just need to make sure it is initialized
     Triggers.init($);
@@ -93,8 +103,6 @@ class OffCanvas extends Plugin {
       this._adjustToLocalScope();
     }
 
-    this.$content.addClass(`has-transition-${this.options.transition}`);
-
     // Add an overlay over the content if necessary
     if (this.options.contentOverlay === true) {
       var overlay = document.createElement('div');
@@ -119,7 +127,8 @@ class OffCanvas extends Plugin {
       this.$element.css('transition-duration', this.options.transitionTime);
     }
 
-    this._setContentClasses();
+    // Initally remove all transition/position CSS classes from off-canvas content container.
+    this._removeContentClasses();
 
     this._emulateFixedPosition(true);
   }
@@ -178,19 +187,25 @@ class OffCanvas extends Plugin {
   }
 
   /**
-   * Sets the CSS transition/position classes of the off-canvas content container.
+   * Removes the CSS transition/position classes of the off-canvas content container.
    * Removing the classes is important when another off-canvas gets opened that uses the same content container.
+   * @private
+   */
+  _removeContentClasses() {
+    this.$content.removeClass(this.contentClasses.join(' '));
+  }
+
+  /**
+   * Adds the CSS transition/position classes of the off-canvas content container, based on the opening off-canvas element.
+   * Beforehand any transition/position class gets removed.
    * @param {Boolean} hasReveal - true if related off-canvas element is revealed.
    * @private
    */
-  _setContentClasses(hasReveal) {
-    this.$content
-      .removeClass('has-transition-push has-transition-overlap has-position-left has-position-top has-position-right has-position-bottom has-reveal-left has-reveal-top has-reveal-right has-reveal-bottom')
-      .addClass(`has-transition-${this.options.transition} has-position-${this.position}`);
-
+  _addContentClasses(hasReveal) {
+    this._removeContentClasses();
+    this.$content.addClass(`has-transition-${this.options.transition} has-position-${this.position}`);
     if (hasReveal === true) {
-      this.$content
-        .addClass(`has-reveal-${this.position}`);
+      this.$content.addClass(`has-reveal-${this.position}`);
     }
   }
 
@@ -285,7 +300,7 @@ class OffCanvas extends Plugin {
         $closer.show();
       }
     }
-    this._setContentClasses(isRevealed);
+    this._addContentClasses(isRevealed);
   }
 
   /**
@@ -407,7 +422,7 @@ class OffCanvas extends Plugin {
       Keyboard.trapFocus(this.$element);
     }
 
-    this._setContentClasses();
+    this._addContentClasses();
   }
 
   /**
@@ -455,12 +470,22 @@ class OffCanvas extends Plugin {
       Keyboard.releaseFocus(this.$element);
     }
 
-    // Listen to transitionEnd of content container and add class when done.
-    // The listener is not assigned to the off-canvas element itself because it doesn't transform if nested (push).
-    this.$content.on(Foundation.transitionend(this.$content), function(e) {
+    // Listen to transitionEnd  and add class when done.
+    // Listening to both, element and content, is required because they don't always transform together (e.g. on nested push transition).
+    this.$content.one(Foundation.transitionend(this.$content), function(e) {
       if (e.originalEvent.propertyName.match(/transform/i)) {
+        _this.$element.off(Foundation.transitionend(this.$content)); // unbind $element listener since it hasn't transformed
         _this.$element.addClass('is-closed');
         _this.$content.off(Foundation.transitionend(_this.$content));
+        _this._removeContentClasses();
+      }
+    });
+    this.$element.one(Foundation.transitionend(this.$element), function(e) {
+      if (e.originalEvent.propertyName.match(/transform/i)) {
+        _this.$content.off(Foundation.transitionend(this.$element)); // unbind $content listener since it hasn't transformed
+        _this.$element.addClass('is-closed');
+        _this.$content.off(Foundation.transitionend(_this.$content));
+        _this._removeContentClasses();
       }
     });
   }
