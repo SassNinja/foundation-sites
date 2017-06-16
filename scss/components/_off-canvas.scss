@@ -192,7 +192,9 @@ $maincontent-class: 'off-canvas-content' !default;
 
     // Sets the open position for the content
     @at-root .#{$maincontent-class}.is-open-#{$position} {
-      transform: translateX($size);
+      &.has-transition-push {
+        transform: translateX($size);
+      }
     }
   }
   @else if $position == right {
@@ -214,7 +216,9 @@ $maincontent-class: 'off-canvas-content' !default;
 
     // Sets the open position for the content
     @at-root .#{$maincontent-class}.is-open-#{$position} {
-      transform: translateX(-$size);
+      &.has-transition-push {
+        transform: translateX(-$size);
+      }
     }
   }
   @else if $position == top {
@@ -237,7 +241,9 @@ $maincontent-class: 'off-canvas-content' !default;
 
     // Sets the open position for the content
     @at-root .#{$maincontent-class}.is-open-#{$position} {
-      transform: translateY($size);
+      &.has-transition-push {
+        transform: translateY($size);
+      }
     }
   }
   @else if $position == bottom {
@@ -260,7 +266,9 @@ $maincontent-class: 'off-canvas-content' !default;
 
     // Sets the open position for the content
     @at-root .#{$maincontent-class}.is-open-#{$position} {
-      transform: translateY(-$size);
+      &.has-transition-push {
+        transform: translateY(-$size);
+      }
     }
   }
 
@@ -291,9 +299,9 @@ $maincontent-class: 'off-canvas-content' !default;
   transition: transform $offcanvas-transition-length $offcanvas-transition-timing;
   backface-visibility: hidden;
 
-  // Preserve transform none on overlap transition (override position based translate)
-  &.has-transition-overlap {
-    transform: none;
+  // Transform scope until the element is closed (makes sure transitionend gets triggered)
+  &.has-transition-push {
+    transform: translate(0, 0);
   }
 }
 
