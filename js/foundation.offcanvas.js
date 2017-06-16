@@ -30,6 +30,7 @@ class OffCanvas extends Plugin {
     this.contentClasses = [];
     this.$lastTrigger = $();
     this.$triggers = $();
+    this.$transitionendTarget = $();
     this.position = 'left';
     this.$content = $();
     this.nested = !!(this.options.nested);
@@ -95,6 +96,10 @@ class OffCanvas extends Plugin {
       // Once the element is nested it is required to work properly in this case
       console.warn('Remember to use the nested option if using the content ID option!');
     }
+
+    // By default the transitionend listener should target the off-canvas element
+    // But if using a nested element with push transition, target the content because the element doesn't get transitioned in this case
+    this.$transitionendTarget = this.nested && this.options.transition == 'push' ? this.$content : this.$element;
 
     // For a nested element, find closest (relative) positioned element
     if (this.nested) {
@@ -404,7 +409,7 @@ class OffCanvas extends Plugin {
     }
 
     if (this.options.autoFocus === true) {
-      this.$element.one(transitionend(this.$element), function() {
+      this.$transitionendTarget.one(Foundation.transitionend(this.$element), function() {
         if (!_this.$element.hasClass('is-open')) {
           return; // exit if prematurely closed
         }
@@ -470,21 +475,10 @@ class OffCanvas extends Plugin {
       Keyboard.releaseFocus(this.$element);
     }
 
-    // Listen to transitionEnd  and add class when done.
-    // Listening to both, element and content, is required because they don't always transform together (e.g. on nested push transition).
-    this.$content.one(Foundation.transitionend(this.$content), function(e) {
+    // Listen to transitionEnd and add class when done.
+    this.$transitionendTarget.one(Foundation.transitionend(this.$element), function(e) {
       if (e.originalEvent.propertyName.match(/transform/i)) {
-        _this.$element.off(Foundation.transitionend(this.$content)); // unbind $element listener since it hasn't transformed
         _this.$element.addClass('is-closed');
-        _this.$content.off(Foundation.transitionend(_this.$content));
-        _this._removeContentClasses();
-      }
-    });
-    this.$element.one(Foundation.transitionend(this.$element), function(e) {
-      if (e.originalEvent.propertyName.match(/transform/i)) {
-        _this.$content.off(Foundation.transitionend(this.$element)); // unbind $content listener since it hasn't transformed
-        _this.$element.addClass('is-closed');
-        _this.$content.off(Foundation.transitionend(_this.$content));
         _this._removeContentClasses();
       }
     });
