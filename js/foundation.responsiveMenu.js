@@ -48,6 +48,7 @@ class ResponsiveMenu extends Plugin {
     this.rules = this.$element.data('responsive-menu');
     this.currentMq = null;
     this.currentPlugin = null;
+    this.className = 'ResponsiveMenu'; // ie9 back compat
 
     this._init();
     this._events();
@@ -59,6 +60,8 @@ class ResponsiveMenu extends Plugin {
    * @private
    */
   _init() {
+
+    MediaQuery._init();
     // The first time an Interchange plugin is initialized, this.rules is converted from a string of "classes" to an object of rules
     if (typeof this.rules === 'string') {
       let rulesTree = {};

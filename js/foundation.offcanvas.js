@@ -25,29 +25,29 @@ class OffCanvas extends Plugin {
    * @param {Object} options - Overrides to the default plugin settings.
    */
   _setup(element, options) {
+    this.className = 'OffCanvas'; // ie9 back compat
     this.$element = element;
     this.options = $.extend({}, OffCanvas.defaults, this.$element.data(), options);
-    this.contentClasses = [];
+    this.contentClasses = { base: [], reveal: [] };
     this.$lastTrigger = $();
     this.$triggers = $();
     this.$transitionendTarget = $();
     this.position = 'left';
     this.$content = $();
     this.nested = !!(this.options.nested);
-    this.$relativeParent;
-    this.relativeScope = false;
 
     // Defines the CSS transition/position classes of the off-canvas content container.
     $(['push', 'overlap']).each((index, val) => {
-      this.contentClasses.push('has-transition-'+val);
+      this.contentClasses.base.push('has-transition-'+val);
     });
     $(['left', 'right', 'top', 'bottom']).each((index, val) => {
-      this.contentClasses.push('has-position-'+val);
-      this.contentClasses.push('has-reveal-'+val);
+      this.contentClasses.base.push('has-position-'+val);
+      this.contentClasses.reveal.push('has-reveal-'+val);
     });
 
-    //Triggers init is idempotent, just need to make sure it is initialized
+    // Triggers init is idempotent, just need to make sure it is initialized
     Triggers.init($);
+    MediaQuery._init();
 
     this._init();
     this._events();
@@ -91,6 +91,7 @@ class OffCanvas extends Plugin {
     if (!this.options.contentId) {
       // Assume that the off-canvas element is nested if it isn't a sibling of the content
       this.nested = this.$element.siblings('[data-off-canvas-content]').length === 0;
+
     } else if (this.options.contentId && this.options.nested === null) {
       // Warning if using content ID without setting the nested option
       // Once the element is nested it is required to work properly in this case
@@ -196,8 +197,11 @@ class OffCanvas extends Plugin {
    * Removing the classes is important when another off-canvas gets opened that uses the same content container.
    * @private
    */
-  _removeContentClasses() {
-    this.$content.removeClass(this.contentClasses.join(' '));
+  _removeContentClasses(hasReveal) {
+    this.$content.removeClass(this.contentClasses.base.join(' '));
+    if (hasReveal === true) {
+      this.$content.removeClass(this.contentClasses.reveal.join(' '));
+    }
   }
 
   /**
@@ -285,14 +289,12 @@ class OffCanvas extends Plugin {
    * @function
    */
   reveal(isRevealed) {
-    var $closer = this.$element.find('[data-close]');
     if (isRevealed) {
       this.close();
       this.isRevealed = true;
       this.$element.attr('aria-hidden', 'false');
       this.$element.off('open.zf.trigger toggle.zf.trigger');
       this.$element.removeClass('is-closed');
-      if ($closer.length) { $closer.hide(); }
     } else {
       this.isRevealed = false;
       this.$element.attr('aria-hidden', 'true');
@@ -301,9 +303,6 @@ class OffCanvas extends Plugin {
         'toggle.zf.trigger': this.toggle.bind(this)
       });
       this.$element.addClass('is-closed');
-      if ($closer.length) {
-        $closer.show();
-      }
     }
     this._addContentClasses(isRevealed);
   }
@@ -384,12 +383,12 @@ class OffCanvas extends Plugin {
      * Fires when the off-canvas menu opens.
      * @event OffCanvas#opened
      */
-    _this.$element.addClass('is-open').removeClass('is-closed');
+    this.$element.addClass('is-open').removeClass('is-closed');
 
     this.$triggers.attr('aria-expanded', 'true');
     this.$element.attr('aria-hidden', 'false')
         .trigger('opened.zf.offcanvas');
-    
+
     this.$content.addClass('is-open-' + this.position);
 
     // If `contentScroll` is set to false, add class and disable scrolling on touch devices.
@@ -409,7 +408,8 @@ class OffCanvas extends Plugin {
     }
 
     if (this.options.autoFocus === true) {
-      this.$transitionendTarget.one(Foundation.transitionend(this.$element), function() {
+      this.$transitionendTarget.one('transitionend webkitTransitionEnd oTransitionEnd otransitionend MSTransitionEnd', function() {
+      // this.$transitionendTarget.one(transitionend(this.$element), function() {
         if (!_this.$element.hasClass('is-open')) {
           return; // exit if prematurely closed
         }
@@ -441,7 +441,7 @@ class OffCanvas extends Plugin {
 
     var _this = this;
 
-    _this.$element.removeClass('is-open');
+    this.$element.removeClass('is-open');
 
     this.$element.attr('aria-hidden', 'true')
       /**
@@ -453,7 +453,7 @@ class OffCanvas extends Plugin {
     this.$content.removeClass('is-open-left is-open-top is-open-right is-open-bottom');
 
     // If `contentScroll` is set to false, remove class and re-enable scrolling on touch devices.
-    // // If off-canvas element is nested, force `contentScroll` false.
+    // If off-canvas element is nested, force `contentScroll` false.
     if (this.options.contentScroll === false || this.nested === true) {
       $('body').removeClass('is-off-canvas-open').off('touchmove', this._stopScrolling);
       this.$element.off('touchstart', this._recordScrollable);
@@ -476,7 +476,8 @@ class OffCanvas extends Plugin {
     }
 
     // Listen to transitionEnd and add class when done.
-    this.$transitionendTarget.one(Foundation.transitionend(this.$element), function(e) {
+    this.$transitionendTarget.one('transitionend webkitTransitionEnd oTransitionEnd otransitionend MSTransitionEnd', function(e) {
+    // this.$transitionendTarget.one(transitionend(this.$element), function(e) {
       if (e.originalEvent.propertyName.match(/transform/i)) {
         _this.$element.addClass('is-closed');
         _this._removeContentClasses();
@@ -548,7 +549,7 @@ OffCanvas.defaults = {
   contentOverlay: true,
 
   /**
-   * Target an off-canvas content container by ID that may be placed anywhere. If null the closest content container will be taken. 
+   * Target an off-canvas content container by ID that may be placed anywhere. If null the closest content container will be taken.
    * @option
    * @type {?string}
    * @default null

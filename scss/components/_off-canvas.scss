@@ -139,8 +139,12 @@ $maincontent-class: 'off-canvas-content' !default;
   }
 
   // Set the off-canvas z-index.
-  // Since the push z-index may be set by custom settings, a condition makes sure it is greater than the overlay's z-index (backwards compatibility).
   z-index: $offcanvas-push-zindex;
+
+  // Increase CSS specificity
+  &.is-transition-push {
+    z-index: $offcanvas-push-zindex;
+  }
 
   transition: transform $transition;
   backface-visibility: hidden;
@@ -303,6 +307,11 @@ $maincontent-class: 'off-canvas-content' !default;
   &.has-transition-push {
     transform: translate(0, 0);
   }
+
+  // Consider element & content, nested in another content
+  // .off-canvas.is-open {
+  //   transform: translate(0, 0);
+  // }
 }
 
 /// Adds styles that reveal an off-canvas panel.
@@ -320,6 +329,15 @@ $content: $maincontent-class
     position: absolute;
   }
 
+  .close-button {
+    display: none;
+  }
+
+  // Consider revealed element is nested in content
+  .#{$maincontent-class} & {
+    transform: none;
+  }
+
   @at-root .#{$content}.has-reveal-#{$position} {
     margin-#{$position}: $offcanvas-size;
   }
@@ -332,15 +350,26 @@ $content: $maincontent-class
 
 /// Overrides the off-canvas styles
 @mixin in-canvas() {
-  transform: none !important;
   visibility: visible;
-  height: auto !important;
-  box-shadow: none !important;
+  height: auto;
   position: static;
   background: inherit;
   width: inherit;
   overflow: inherit;
   transition: inherit;
+
+  // Increase CSS specificity
+  &.position-left,
+  &.position-right,
+  &.position-top,
+  &.position-bottom {
+    box-shadow: none;
+    transform: none;
+  }
+
+  .close-button {
+    display: none;
+  }
 }
 
 @mixin foundation-off-canvas {
@@ -355,8 +384,7 @@ $content: $maincontent-class
   .off-canvas {
     @include off-canvas-base;
 
-    // Force position absolute for nested off-canvas because fixed doesn't work in this case (and gets emulated by JS anyway).
-    // This is important for the IE which doesn't show an opened push off-canvas element otherwise!
+    // Force position absolute for nested off-canvas because fixed doesn't work in transform scope (and gets emulated by JS anyway).
     @at-root .#{$maincontent-class} & {
       position: absolute;
     }

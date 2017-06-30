@@ -26,6 +26,7 @@ class Tooltip extends Positionable {
   _setup(element, options) {
     this.$element = element;
     this.options = $.extend({}, Tooltip.defaults, this.$element.data(), options);
+    this.className = 'Tooltip'; // ie9 back compat
 
     this.isActive = false;
     this.isClick = false;
@@ -41,6 +42,7 @@ class Tooltip extends Positionable {
    * @private
    */
   _init() {
+    MediaQuery._init();
     var elemId = this.$element.attr('aria-describedby') || GetYoDigits(6, 'tooltip');
 
     this.options.tipText = this.options.tipText || this.$element.attr('title');

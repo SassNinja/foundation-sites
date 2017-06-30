@@ -26,6 +26,7 @@ class Reveal extends Plugin {
   _setup(element, options) {
     this.$element = element;
     this.options = $.extend({}, Reveal.defaults, this.$element.data(), options);
+    this.className = 'Reveal'; // ie9 back compat
     this._init();
 
     // Triggers init is idempotent, just need to make sure it is initialized
@@ -41,6 +42,7 @@ class Reveal extends Plugin {
    * @private
    */
   _init() {
+    MediaQuery._init();
     this.id = this.$element.attr('id');
     this.isActive = false;
     this.cached = {mq: MediaQuery.current};
