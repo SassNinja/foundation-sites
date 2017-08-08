@@ -352,25 +352,15 @@ class OffCanvas extends Plugin {
   close(cb) {
     if (!this.$element.hasClass('is-open') || this.isRevealed) { return; }
 
-    var _this = this;
-
+    /**
+     * Fires when the off-canvas menu closes.
+     * @event OffCanvas#closed
+     */
     this.$element.removeClass('is-open');
-
-    this.$element.attr('aria-hidden', 'true')
-      /**
-       * Fires when the off-canvas menu opens.
-       * @event OffCanvas#closed
-       */
-        .trigger('closed.zf.offcanvas');
+    this.$element.attr('aria-hidden', 'true');
+    this.$element.trigger('closed.zf.offcanvas');
 
     this.$content.removeClass('is-open-left is-open-top is-open-right is-open-bottom');
-
-    // If `contentScroll` is set to false, remove class and re-enable scrolling on touch devices.
-    if (this.options.contentScroll === false) {
-      $('body').removeClass('is-off-canvas-open').off('touchmove', this._stopScrolling);
-      this.$element.off('touchstart', this._recordScrollable);
-      this.$element.off('touchmove', this._stopScrollPropagation);
-    }
 
     if (this.options.contentOverlay === true) {
       this.$overlay.removeClass('is-visible');
@@ -381,16 +371,32 @@ class OffCanvas extends Plugin {
     }
 
     this.$triggers.attr('aria-expanded', 'false');
+    
 
-    if (this.options.trapFocus === true) {
-      this.$content.removeAttr('tabindex');
-      Keyboard.releaseFocus(this.$element);
-    }
+    // Listen to transitionEnd: add class, re-enable scrolling and release focus when done.
+    this.$element.one(transitionend(this.$element), (e) => {
 
-    // Listen to transitionEnd and add class when done.
-    this.$element.one(transitionend(this.$element), function(e) {
-      _this.$element.addClass('is-closed');
-      _this._removeContentClasses();
+      /**
+       * Fires when the off-canvas menu close transition is done.
+       * @event OffCanvas#closedEnd
+       */
+      this.$element.addClass('is-closed');
+      this._removeContentClasses();
+      this._unfixStickyElements();
+
+      // If `contentScroll` is set to false, remove class and re-enable scrolling on touch devices.
+      if (this.options.contentScroll === false) {
+        $('body').removeClass('is-off-canvas-open').off('touchmove', this._stopScrolling);
+        this.$element.off('touchstart', this._recordScrollable);
+        this.$element.off('touchmove', this._stopScrollPropagation);
+      }
+
+      if (this.options.trapFocus === true) {
+        this.$content.removeAttr('tabindex');
+        Keyboard.releaseFocus(this.$element);
+      }
+
+      this.$element.trigger('closedEnd.zf.offcanvas');
     });
   }
 
