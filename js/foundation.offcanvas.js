@@ -382,7 +382,6 @@ class OffCanvas extends Plugin {
        */
       this.$element.addClass('is-closed');
       this._removeContentClasses();
-      this._unfixStickyElements();
 
       // If `contentScroll` is set to false, remove class and re-enable scrolling on touch devices.
       if (this.options.contentScroll === false) {
