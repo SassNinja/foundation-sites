@@ -32,7 +32,7 @@ var MenuPlugins = {
 class ResponsiveAccordionTabs extends Plugin{
   constructor(element, options) {
     super(element, options);
-    return this.storezfData || this;
+    return this.options.reflow && this.storezfData || this;
   }
 
   /**

@@ -154,7 +154,7 @@ var Foundation = {
       // For each plugin found, initialize it
       $elem.each(function() {
         var $el = $(this),
-            opts = {};
+            opts = { reflow: true };
         // Don't double-dip on plugins
         if ($el.data('zfPlugin')) {
           console.warn("Tried to initialize "+name+" on an element that already has a Foundation plugin.");
